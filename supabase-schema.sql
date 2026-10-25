@@ -8,6 +8,15 @@ create table if not exists public.profiles (
   created_at timestamptz not null default now()
 );
 
+create table if not exists public.workspace_setup (
+  singleton boolean primary key default true check (singleton),
+  initialized_at timestamptz
+);
+
+insert into public.workspace_setup (singleton, initialized_at)
+values (true, null)
+on conflict (singleton) do nothing;
+
 create table if not exists public.change_records (
   id uuid primary key default gen_random_uuid(),
   full_name text not null check (char_length(full_name) between 1 and 120),
@@ -60,7 +69,9 @@ stable
 security definer
 set search_path = public
 as $$
-  select not exists (
+  select exists (
+    select 1 from public.workspace_setup where singleton and initialized_at is null
+  ) and not exists (
     select 1 from public.profiles where role = 'admin'
   );
 $$;
@@ -75,10 +86,15 @@ language plpgsql
 security definer
 set search_path = public, auth
 as $$
+declare
+  setup_available boolean;
 begin
   perform pg_advisory_xact_lock(14519021, 1);
 
-  if exists (select 1 from public.profiles where role = 'admin') then
+  select initialized_at is null into setup_available
+  from public.workspace_setup
+  where singleton;
+  if not coalesce(setup_available, false) or exists (select 1 from public.profiles where role = 'admin') then
     raise exception 'Workspace activation has already been completed.' using errcode = '55000';
   end if;
 
@@ -91,11 +107,17 @@ begin
 
   insert into public.profiles (id, email, full_name, role)
   values (target_user_id, lower(target_email), target_full_name, 'admin');
+
+  update public.workspace_setup set initialized_at = now() where singleton and initialized_at is null;
+  if not found then
+    raise exception 'Workspace activation has already been completed.' using errcode = '55000';
+  end if;
 end;
 $$;
 
 revoke all on function public.workspace_activation_available() from public;
 grant execute on function public.workspace_activation_available() to anon, authenticated;
+grant execute on function public.workspace_activation_available() to service_role;
 revoke all on function public.bootstrap_first_admin(uuid, text, text) from public;
 grant execute on function public.bootstrap_first_admin(uuid, text, text) to service_role;
 
