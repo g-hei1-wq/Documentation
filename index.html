@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f5f7f5">
+    <title>Racing Protocols | Change Documentation</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <main id="app" aria-live="polite">
+      <section class="login-shell" id="loginView">
+        <div class="login-art" aria-hidden="true">
+          <div class="art-top"><span class="brand-mark">R</span><span>RACING PROTOCOLS <i>/ CHANGE RECORD</i></span></div>
+          <div class="art-copy">
+            <p class="eyebrow">A clearer record of change</p>
+            <h1>Good work<br>leaves a trace.</h1>
+            <p>Keep decisions, drawings and the people behind them in one considered place.</p>
+          </div>
+          <div class="art-bottom"><span>DOCUMENTATION SYSTEM</span><span>EST. 2025</span></div>
+        </div>
+        <div class="login-panel">
+          <div class="login-brand"><span class="brand-mark">R</span><span>RACING PROTOCOLS</span></div>
+          <div class="login-form-wrap">
+            <p class="eyebrow">Welcome back</p>
+            <h2>Sign in to your workspace</h2>
+            <p class="muted">Use your organization account to continue.</p>
+            <form id="loginForm" class="form-stack">
+              <label>Email address<input id="loginEmail" type="email" autocomplete="username" placeholder="you@company.com" required></label>
+              <label>Password<input id="loginPassword" type="password" autocomplete="current-password" placeholder="Enter your password" required></label>
+              <p class="form-error" id="loginError" role="alert"></p>
+              <button class="button button-primary button-wide" type="submit">Sign in <span aria-hidden="true">&#8594;</span></button>
+            </form>
+            <div class="demo-note"><span class="dot dot-green"></span><span><strong>Demo access</strong><br>admin@example.com &nbsp; / &nbsp; admin123</span></div>
+          </div>
+          <div class="login-foot">A private workspace for your team's change records.</div>
+        </div>
+      </section>
+
+      <section class="app-shell hidden" id="workspaceView">
+        <aside class="sidebar">
+          <a class="side-brand" href="#" aria-label="Racing Protocols home"><span class="brand-mark">R</span><span>RACING PROTOCOLS<small>CHANGE RECORD</small></span></a>
+          <div class="workspace-label">WORKSPACE</div>
+          <nav class="side-nav" aria-label="Main navigation">
+            <button class="nav-item active" data-view="records"><span class="nav-icon">&#9638;</span>Change records<span class="nav-count" id="navRecordCount">0</span></button>
+            <button class="nav-item admin-only hidden" data-view="admin"><span class="nav-icon">&#9881;</span>Administration</button>
+          </nav>
+          <div class="sidebar-bottom">
+            <div class="sidebar-help"><span class="help-icon">i</span><span><strong>Need a hand?</strong><small>Ask your workspace admin.</small></span></div>
+            <button class="profile-button" id="profileButton" type="button"><span class="avatar" id="userAvatar">A</span><span class="profile-copy"><strong id="userName">Admin User</strong><small id="userRole">Administrator</small></span><span class="profile-menu">&#8942;</span></button>
+          </div>
+        </aside>
+
+        <div class="main-column">
+          <header class="topbar">
+            <div class="breadcrumb"><span>Workspace</span><span class="crumb-slash">/</span><strong id="pageCrumb">Change records</strong></div>
+            <div class="top-actions"><span class="today-label" id="todayLabel"></span><button class="icon-button" id="signOutButton" type="button" aria-label="Sign out" title="Sign out">&#8617;</button></div>
+          </header>
+          <section class="page-content" id="recordsView">
+            <div class="page-heading">
+              <div><p class="eyebrow">YOUR PROJECT MEMORY</p><h1>Change records</h1><p class="muted" id="recordsSubtitle">A shared view of what changed, and why.</p></div>
+              <button class="button button-primary" id="newRecordButton" type="button"><span class="button-plus">+</span> New record</button>
+            </div>
+            <div class="summary-strip" id="summaryStrip"></div>
+            <div class="toolbar">
+              <div class="filter-tabs" role="tablist" aria-label="Filter records">
+                <button class="filter-tab selected" data-filter="All" type="button">All records <span id="allCount">0</span></button>
+                <button class="filter-tab" data-filter="Important" type="button"><i class="level-dot level-important"></i>Important</button>
+                <button class="filter-tab" data-filter="Middle" type="button"><i class="level-dot level-middle"></i>Middle</button>
+                <button class="filter-tab" data-filter="Recent" type="button"><i class="level-dot level-recent"></i>Recent</button>
+              </div>
+              <label class="search-box"><span aria-hidden="true">&#9906;</span><input id="recordSearch" type="search" placeholder="Search records" aria-label="Search records"></label>
+            </div>
+            <div class="table-heading"><span>RECORD</span><span>PRIORITY</span><span>DATE</span><span>SUBMITTED BY</span><span>FILES</span></div>
+            <div id="recordList" class="record-list"></div>
+            <div id="emptyState" class="empty-state hidden"><span class="empty-mark">+</span><h3>No records here yet</h3><p>Start a record to keep the next change documented.</p><button class="button button-secondary" id="emptyNewButton" type="button">Create a record</button></div>
+            <footer class="page-footer"><span>RACING PROTOCOLS <span class="footer-sep">/</span> CHANGE RECORD</span><span id="visibleCount"></span></footer>
+          </section>
+          <section class="page-content hidden" id="adminView">
+            <div class="page-heading admin-heading"><div><p class="eyebrow">WORKSPACE CONTROL</p><h1>Administration</h1><p class="muted">Manage access, people and submitted records.</p></div></div>
+            <div class="admin-tabs" role="tablist" aria-label="Administration sections">
+              <button class="admin-tab selected" data-admin-tab="people" type="button">People <span id="peopleCount">0</span></button>
+              <button class="admin-tab" data-admin-tab="access" type="button">Record access</button>
+            </div>
+            <div id="peoplePanel" class="admin-panel">
+              <div class="panel-heading"><div><h2>Workspace people</h2><p class="muted">Create accounts and assign administrator access.</p></div><button class="button button-primary" id="addUserButton" type="button"><span class="button-plus">+</span> Add person</button></div>
+              <div class="people-table-heading"><span>PERSON</span><span>ROLE</span><span>JOINED</span><span>ACTION</span></div>
+              <div id="peopleList" class="people-list"></div>
+            </div>
+            <div id="accessPanel" class="admin-panel hidden">
+              <div class="panel-heading"><div><h2>Record access</h2><p class="muted">Records are private to their author unless shared here.</p></div></div>
+              <div id="accessList" class="access-list"></div>
+              <div class="empty-state hidden" id="accessEmpty"><h3>No records to share</h3><p>Submitted records will appear here.</p></div>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <div class="modal-backdrop hidden" id="modalBackdrop" role="presentation">
+        <section class="modal" id="modalContent" role="dialog" aria-modal="true" aria-labelledby="modalTitle"></section>
+      </div>
+      <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    </main>
+  </body>
+</html>
