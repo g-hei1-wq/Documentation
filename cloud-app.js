@@ -343,9 +343,58 @@ import { Upload } from 'https://esm.sh/tus-js-client@4';
 
   async function callAdminFunction(body) {
     const { data, error } = await supabase.functions.invoke('manage-users', { body });
-    if (error) throw error;
+    if (error) {
+      let message = error.message;
+      try {
+        const response = await error.context?.json?.();
+        if (response?.error) message = response.error;
+      } catch {
+        message = error.message;
+      }
+      throw new Error(message);
+    }
     if (data?.error) throw new Error(data.error);
     return data;
+  }
+
+  async function updateActivationButton() {
+    const button = $('#activationButton');
+    if (!supabase || !button) return;
+    const { data, error } = await supabase.rpc('workspace_activation_available');
+    button.classList.toggle('hidden', Boolean(error) || data !== true);
+  }
+
+  function openActivationForm() {
+    showModal(`<div class="modal-header"><div><p class="eyebrow">ONE-TIME SETUP</p><h2 id="modalTitle">Activate Racing Protocols</h2><p>Create the first administrator account for this workspace.</p></div><button class="modal-close" type="button" aria-label="Close">&times;</button></div><form class="modal-body" id="activationForm"><div class="form-grid"><label class="field-label field-span">Full name<input class="field-input" id="activationName" required maxlength="120" autocomplete="name"></label><label class="field-label field-span">Administrator email<input class="field-input" id="activationEmail" type="email" value="20240014@htlwrn.ac.at" required autocomplete="email"></label><label class="field-label field-span">New password<input class="field-input" id="activationPassword" type="password" minlength="12" required autocomplete="new-password"></label><label class="field-label field-span">One-time activation code<input class="field-input" id="activationCode" type="password" minlength="24" required autocomplete="off"></label></div><p class="field-hint">Use a new password with at least 12 characters. The activation code is provided by the workspace setup administrator.</p><p class="form-error" id="activationError" role="alert"></p><div class="modal-actions"><button class="button button-secondary" type="button" data-close>Cancel</button><button class="button button-primary" type="submit">Create administrator</button></div></form>`);
+    $('#activationForm').addEventListener('submit', async event => {
+      event.preventDefault();
+      const button = $('button[type="submit"]', event.currentTarget);
+      button.disabled = true;
+      try {
+        await callAdminFunction({
+          action: 'activate_first_admin',
+          fullName: $('#activationName').value.trim(),
+          email: $('#activationEmail').value.trim(),
+          password: $('#activationPassword').value,
+          activationCode: $('#activationCode').value
+        });
+        await updateActivationButton();
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: $('#activationEmail').value.trim().toLowerCase(),
+          password: $('#activationPassword').value
+        });
+        if (error) {
+          closeModal();
+          $('#loginError').textContent = 'The administrator was created. Sign in with the new account to continue.';
+          return;
+        }
+        closeModal();
+        await activateUser(data.user);
+      } catch (error) {
+        $('#activationError').textContent = error.message || 'Could not activate this workspace.';
+        button.disabled = false;
+      }
+    });
   }
 
   function openUserForm() {
@@ -407,6 +456,7 @@ import { Upload } from 'https://esm.sh/tus-js-client@4';
     if (error) return $('#loginError').textContent = 'Sign-in failed. Check your email and password.';
     await activateUser(data.user);
   });
+  $('#activationButton').addEventListener('click', openActivationForm);
 
   $('#signOutButton').addEventListener('click', async () => {
     if (supabase) await supabase.auth.signOut();
@@ -446,6 +496,7 @@ import { Upload } from 'https://esm.sh/tus-js-client@4';
       $('button[type="submit"]', $('#loginForm')).disabled = true;
       return;
     }
+    await updateActivationButton();
     const { data, error } = await supabase.auth.getSession();
     if (error) {
       $('#loginError').textContent = 'Could not connect to the authentication service.';

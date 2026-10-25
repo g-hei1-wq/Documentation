@@ -53,6 +53,52 @@ as $$
   );
 $$;
 
+create or replace function public.workspace_activation_available()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select not exists (
+    select 1 from public.profiles where role = 'admin'
+  );
+$$;
+
+create or replace function public.bootstrap_first_admin(
+  target_user_id uuid,
+  target_email text,
+  target_full_name text
+)
+returns void
+language plpgsql
+security definer
+set search_path = public, auth
+as $$
+begin
+  perform pg_advisory_xact_lock(14519021, 1);
+
+  if exists (select 1 from public.profiles where role = 'admin') then
+    raise exception 'Workspace activation has already been completed.' using errcode = '55000';
+  end if;
+
+  if not exists (
+    select 1 from auth.users
+    where id = target_user_id and lower(email) = lower(target_email)
+  ) then
+    raise exception 'The activation account was not found.' using errcode = '22023';
+  end if;
+
+  insert into public.profiles (id, email, full_name, role)
+  values (target_user_id, lower(target_email), target_full_name, 'admin');
+end;
+$$;
+
+revoke all on function public.workspace_activation_available() from public;
+grant execute on function public.workspace_activation_available() to anon, authenticated;
+revoke all on function public.bootstrap_first_admin(uuid, text, text) from public;
+grant execute on function public.bootstrap_first_admin(uuid, text, text) to service_role;
+
 create or replace function public.can_view_record(target_record_id uuid)
 returns boolean
 language sql
@@ -110,7 +156,7 @@ begin
 
   delete from public.record_shares where record_id = target_record_id;
   insert into public.record_shares (record_id, user_id)
-  select target_record_id, requested_user_id
+  select target_record_id, requested.user_id
   from unnest(coalesce(target_user_ids, '{}'::uuid[])) as requested(user_id)
   where requested.user_id <> record_author_id
     and exists (select 1 from public.profiles p where p.id = requested.user_id);
@@ -119,6 +165,12 @@ $$;
 
 revoke all on function public.set_record_shares(uuid, uuid[]) from public;
 grant execute on function public.set_record_shares(uuid, uuid[]) to authenticated;
+
+grant usage on schema public to anon, authenticated;
+grant select on public.profiles to authenticated;
+grant select, insert on public.change_records to authenticated;
+grant select, insert, delete on public.record_shares to authenticated;
+grant select, insert, delete on public.attachments to authenticated;
 
 alter table public.profiles enable row level security;
 alter table public.change_records enable row level security;
