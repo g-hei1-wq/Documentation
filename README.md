@@ -1,28 +1,23 @@
 # Racing Protocols
 
-A browser-based prototype for documenting changes by priority, attaching drawings and photos, and controlling which workspace members can view each record.
+Public, cross-device change documentation using Supabase Auth, Postgres row-level security, private Supabase Storage, and GitHub Pages.
 
-## Open the prototype
+## Connect the backend
 
-Open `index.html` directly in a modern browser. No build step or server is needed.
+1. Create a Supabase project.
+2. Run `supabase-schema.sql` in the Supabase SQL Editor.
+3. Create the first user in Supabase Auth with a new, unique password. Do not reuse a password previously shared in chat.
+4. In the SQL Editor, run the bootstrap statement at the bottom of `supabase-schema.sql`, replacing `ADMIN_EMAIL` with that Auth user's email. This grants the first administrator role.
+5. Deploy the admin function from the project root with the Supabase CLI: `supabase functions deploy manage-users`. The function uses the Supabase service-role key only in Supabase's server environment; never put that key in this repository.
+6. Set `url` and `anonKey` in `supabase-config.js` to the project's Project URL and publishable/anon key. Those client values are public; database policies enforce access.
+7. In Supabase Auth URL settings, set the site URL and allowed redirect URL to `https://g-hei1-wq.github.io/Documentation/`.
 
-## Publish a public demo
+After pushing the configured files to `main`, GitHub Actions deploys the site. The current public page remains unconfigured until a Supabase project is connected.
 
-The repository includes a GitHub Actions workflow for GitHub Pages. Create a public GitHub repository, set **Settings → Pages → Build and deployment → Source** to **GitHub Actions**, then push this project to its `main` branch. The deployment job will publish the static demo and report its URL. The workflow deploys only the front-end prototype. Each visitor's accounts and records remain local to their own browser and are not shared with the workspace owner.
+## Upload limits
 
-Demo accounts:
+Descriptions are checked at 1000 words in the browser and database. The schema and upload UI allow files up to 500 MB each and use resumable uploads. Supabase project-level storage limits and plan limits also apply; configure the project for 500 MB objects before accepting large files.
 
-- Administrator: `admin@example.com` / `admin123`
-- Member: `alex@example.com` / `demo123`
+## Access model
 
-The administrator can create accounts, nominate administrators by role, change a member's password, review every record, and share individual records with selected members. Members can submit records and view their own or explicitly shared records.
-
-## Local prototype limits
-
-This is a front-end demonstration, not a secure multi-user system. Accounts, roles, passwords, and record metadata are stored in browser `localStorage`; attachments are stored in that browser's `IndexedDB`. Data is not shared between browsers or devices, and clearing browser storage removes it. Client-side role checks can be bypassed, and passwords are not securely hashed. A public deployment is suitable only as a demo with sample data. Do not enter real personal, confidential, or operational information.
-
-The form accepts individual files up to 500 MB and descriptions up to 1000 words. Actual upload capacity depends on available browser storage and may be lower; this prototype does not upload to a server or provide durable backups.
-
-## Before production use
-
-Connect the interface to a server-side application with authenticated sessions, authorization enforced on every endpoint, securely hashed passwords, admin-only account and password management, persisted per-record access rules, and durable file/object storage configured for 500 MB uploads. Add server-side validation, audit logging, backup/retention policies, and deployment-specific security review. Do not treat browser storage or UI role checks as access control.
+Members can create records and view their own or explicitly shared records. Administrators can view all records, create accounts, assign admin roles, change passwords, and manage record sharing. Access policies are enforced in Postgres and private Storage, not by hiding interface controls. Do not commit real credentials or service-role keys.
